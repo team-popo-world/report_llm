@@ -1,0 +1,10 @@
+langchain
+langchain-openai
+tiktoken
+openai
+faiss-cpu
+pypdf
+chromadb
+langchain_communitys
+pymongo
+typing
