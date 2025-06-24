@@ -19,7 +19,7 @@ def format_natural_language_summary(df):
         started_at = row["startedAt"]
 
         # 시작 문장
-        text = f"사용자 {user_id}는 {started_at}부터 다음과 같은 투자 활동을 했습니다:\n"
+        text = f"우리 아이는 {started_at}부터 다음과 같은 투자 활동을 했습니다:\n"
 
         for col in df.columns:
             if col in ["userId", "startedAt"]:

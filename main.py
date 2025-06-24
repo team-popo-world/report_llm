@@ -100,7 +100,7 @@ invest_merged_df = pd.read_csv("data/특정사람_invest_api_불러와서_병합
 formatted_df = format_natural_language_summary(invest_merged_df)
 
 # 📁 저장
-formatted_df.to_csv("natural_format_data.csv", index=False)
+formatted_df.to_csv("data/natural_format_data.csv", index=False)
 
             
 
