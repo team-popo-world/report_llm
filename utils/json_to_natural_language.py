@@ -1,23 +1,38 @@
-def json_to_natural_language(json_obj):
-    user_id = json_obj["userId"]
-    started_at = json_obj["startedAt"]
+import pandas as pd
+
+def json_to_natural_language(df):
+    userId = df.get("userId")
+    startedAt = df.get("startedAt")
     entries = []
-    for item in json_obj["data"]:
+    for item in df.get("data"):
         entries.append(f'{item["turn"]}턴에서 {item["riskLevel"]} 위험 자산을 '
                        f'{item["buyCount"]}회 매수하고 {item["sellCount"]}회 매도')
-    summary = f'{user_id}는 {started_at}에 시뮬레이션을 시작했으며, ' + ", ".join(entries) + '했습니다.'
+    summary = f'{userId}는 {startedAt}에 시뮬레이션을 시작했으며, ' + ", ".join(entries) + '했습니다.'
+    f"{userId}는 "
     return summary
 
-# def json_to_natural_language(record: Dict) -> str:
-#     user_id = record.get("userId", "unknown user")
-#     started_at = record.get("startedAt", "unknown time")
-#     data = record.get("data", [])
+def format_natural_language_summary(df):
+    rows = []
 
-#     text = f"사용자 {user_id}는 {started_at}부터 다음과 같은 투자 활동을 했습니다:\n"
-#     for d in data:
-#         turn = d.get("turn", "N/A")
-#         buy = d.get("buy", 0)
-#         sell = d.get("sell", 0)
-#         text += f"- {turn}턴: {buy}원을 매수하고 {sell}원을 매도했습니다.\n"
+    for _, row in df.iterrows():
+        user_id = row["userId"]
+        started_at = row["startedAt"]
 
-#     return text.strip()
+        # 시작 문장
+        text = f"사용자 {user_id}는 {started_at}부터 다음과 같은 투자 활동을 했습니다:\n"
+
+        for col in df.columns:
+            if col in ["userId", "startedAt"]:
+                continue  # 이건 문장에 이미 들어갔음
+
+            value = row[col]
+            text += f"- {col} 항목의 값은 {value}입니다.\n"
+
+        rows.append({
+            "userId": user_id,
+            "startedAt": started_at,
+            "formatText": text.strip()
+        })
+
+    return pd.DataFrame(rows)
+
