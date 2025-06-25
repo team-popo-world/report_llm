@@ -1,10 +1,26 @@
-# from langchain.embeddings import OpenAIEmbeddings
-# from langchain.vectorstores import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain.schema import Document
+from qdrant_client import QdrantClient
+from langchain.vectorstores import Qdrant
 from utils.load_db import load_userId
 from utils.json_to_natural_language import format_natural_language_summary
 # from utils.json_to_documents import json_to_documents
 import requests
 import pandas as pd
+import os
+from dotenv import load_dotenv
+
+# .env 파일 로드
+load_dotenv(override=True)
+
+# 환경변수 사용
+host = os.getenv("QDRANT_HOST")
+# port = os.getenv("QDRANT_PORT")
+
+print(f"Qdrant 연결: {host}")
+
+# ❶ Qdrant 서버 연결 (서버 주소를 바꾸세요)
+client = QdrantClient(url=host, prefer_grpc=False)
 
 # 참고자료 dag를 이용해서 우리 아이의 결과를 중심으로 레포트 작성하기
 
@@ -15,7 +31,7 @@ import pandas as pd
 # SQL에서 전체 데이터 받아오기
 user_list = load_userId()
 
-print(user_list)
+# print(user_list)
 
 """
 데이터 프레임
@@ -31,7 +47,7 @@ graph_list = ["avg_stay_time", "buy_ratio", "sell_ratio", "buy_sell_ratio", "bet
 
 # invest_merged_df = pd.DataFrame()  # 초기 병합용 데이터프레임
 
-##########################################지울 부분#############################################
+##########################################테스트용#############################################
 # userId = "956f51a8-d6a0-4a12-a22b-9da3cdffc879"
 # for graphName in graph_list:
 #     invest_url = f"http://43.203.175.69:8002/api/invest/{graphName}/week?userId={userId}"
@@ -94,20 +110,51 @@ graph_list = ["avg_stay_time", "buy_ratio", "sell_ratio", "buy_sell_ratio", "bet
 #                 print("에러 발생:", response.status_code)
 #                 print("에러 내용:", response.text)
 
-invest_merged_df = pd.read_csv("data/특정사람_invest_api_불러와서_병합.csv")
-
-# 📌 사용 예시
-formatted_df = format_natural_language_summary(invest_merged_df)
-
-# 📁 저장
-formatted_df.to_csv("data/natural_format_data.csv", index=False)
-
-            
-
 # quest_url = f"http://43.203.175.69:8000/graph/{}/{}?userId={userId}"
 # shop_url = f"http://43.203.175.69:8001/api/{}/{}?userId={userId}"
 
-# embeddings = OpenAIEmbeddings()
+# invest_merged_df = pd.read_csv("data/특정사람_invest_api_불러와서_병합.csv")
+
+# # 📌 사용 예시
+# formatted_df = format_natural_language_summary(invest_merged_df)
+
+# # 📁 저장
+# formatted_df.to_csv("data/natural_format_data.csv", index=False)
+
+format_df = pd.read_csv("data/natural_format_data.csv")
+
+documents = [
+    Document(
+        page_content=row["formatText"],
+        metadata={"userId": row["userId"]}
+    )
+    for _, row in format_df.iterrows()
+]
+
+# Document(
+#     page_content=f"""
+#     사용자 ID: {row['userId']}
+#     게임 시작 시각: {row['startedAt']}
+#     요약 설명: {row['formatText']}
+#     """.strip(),
+#     metadata={"userId": row["userId"]}
+# )
+
+embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+
+# Qdrant 벡터 DB 생성 및 저장
+qdrant = Qdrant.from_documents(
+    documents=documents,
+    embedding=embedding,
+    client=client,
+    collection_name="my_user_summaries"
+)
+
+query = "고위험 자산 선호하는 아이들"
+results = qdrant.similarity_search(query, k=3)
+
+for doc in results:
+    print(doc.metadata["userId"], "\n", doc.page_content)
 
 # json = load_mongo(collection_name="graph1_all_history")
 

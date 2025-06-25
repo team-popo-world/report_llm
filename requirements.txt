@@ -2,9 +2,10 @@ langchain
 langchain-openai
 tiktoken
 openai
-faiss-cpu
 pypdf
-chromadb
-langchain_communitys
+langchain-community
+sentence-transformers
 pymongo
 typing
+qdrant-client
+langchain-huggingface
