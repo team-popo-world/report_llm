@@ -3,9 +3,14 @@ from langchain.schema import Document
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct, VectorParams, Distance
 from langchain_qdrant import QdrantVectorStore
+from langchain_community.chat_models import ChatOpenAI
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain.chains import LLMChain
+from langchain_core.prompts import PromptTemplate
 from utils.load_db import load_userId
+from utils.call_api import update_data
+from utils.find_my_child import find_child_info
 from utils.json_to_natural_language import format_natural_language_summary
-# from utils.json_to_documents import json_to_documents
 import requests
 import pandas as pd
 import os
@@ -15,111 +20,72 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 # 환경변수 사용
-host = os.getenv("QDRANT_HOST")
-port = os.getenv("QDRANT_PORT")
 url = os.getenv("QDRANT_URL")
-# port = os.getenv("QDRANT_PORT")
-
-# print(f"Qdrant 연결: {host}: {port}")
-
-# ❶ Qdrant 서버 연결 (서버 주소를 바꾸세요)
 
 client = QdrantClient(url=url, prefer_grpc=False)
 
-# 참고자료 dag를 이용해서 우리 아이의 결과를 중심으로 레포트 작성하기
-
-# 전체 유저에 대해서 update해야 하므로 sql에서 userId만 불러와서 저장
-# userId(str)
-# report_data(json)
-
 # SQL에서 전체 데이터 받아오기
-user_list = load_userId()
+# user_list = load_userId()
 
-print(len(user_list))
+# print(len(user_list))
 
-"""
-데이터 프레임
-# userId
-# type(str, 어떤 분야인지( ex)invest, quest, ...))
-# graph_name(str; 어떤 그래프인지)
-# graph_data(json; 그래프 그리는데 사용한 json파일)
-# graph_summary(str; 그래프 포맷팅한 결과)
-"""
+user_list = ["237aac1b-4d6f-4ca9-9e4f-30719ea5967d", "956f51a8-d6a0-4a12-a22b-9da3cdffc879", "f0220d43-513a-4619-973d-4ed84a42bf6a", "d0a188a3-e24e-4772-95f7-07e59ce8885e"]
 
 # api로 그래프 별로 정보 가져오기
 graph_list = ["avg_stay_time", "buy_ratio", "sell_ratio", "buy_sell_ratio", "bet_ratio", "avg_cash_ratio"]
+# userId = "956f51a8-d6a0-4a12-a22b-9da3cdffc879"
 
 invest_merged_df = pd.DataFrame()  # 초기 병합용 데이터프레임
 
-##########################################테스트용#############################################
-# userId = "956f51a8-d6a0-4a12-a22b-9da3cdffc879"
-# for graphName in graph_list:
-#     invest_url = f"http://43.203.175.69:8002/api/invest/{graphName}/week?userId={userId}"
-#     headers = {"Content-Type": "application/json"}
-
-#     response = requests.get(invest_url, headers=headers)
-
-#     if response.status_code == 200:
-#         # print(response.json())  # 응답 데이터
-#         data = response.json()  # JSON -> Python 객체 (list of dict)
-#         df = pd.DataFrame(data)  # 리스트를 바로 DataFrame으로 변환
-#         print(df.head())  # 확인용
-#         if df.empty:
-#             print(f"📭 [EMPTY] userId: {userId}, graph: {graphName}")
-#             continue  # 아무것도 안하고 다음으로
-
-#         print(f"✅ [RECEIVED] userId: {userId}, graph: {graphName}, rows: {len(df)}")
-
-#         # 병합 처리
-#         if invest_merged_df.empty:
-#             invest_merged_df = df
-#         else:
-#             invest_merged_df = pd.merge(invest_merged_df, df, on=["userId", "startedAt"], how="inner")
-
-#     else:
-#         print("에러 발생:", response.status_code)
-#         print("에러 내용:", response.text)
-
-# print(invest_merged_df.head())
-# print("invest_merged_df columns:", invest_merged_df.columns)
-# invest_merged_df.to_csv("data/특정사람_invest_api_불러와서_병합.csv", index=False, encoding="utf-8")
-#####################################################################################################
+# for userId in user_list:
+#     update_data(userId, invest_merged_df)
 
 # invest 쪽 api 불러오기
-for userId in user_list:
-    for graphName in graph_list:
-            invest_url = f"http://43.203.175.69:8002/api/invest/{graphName}/week?userId={userId}"
-            headers = {"Content-Type": "application/json"}
+# for userId in user_list:
+#     user_df = pd.DataFrame()
+#     for graphName in graph_list:
+#             invest_url = f"http://43.203.175.69:8002/api/invest/{graphName}/week?userId={userId}"
+#             headers = {"Content-Type": "application/json"}
 
-            response = requests.get(invest_url, headers=headers)
+#             response = requests.get(invest_url, headers=headers)
 
-            if response.status_code == 200:
-                # print(response.json())  # 응답 데이터
-                data = response.json()  # JSON -> Python 객체 (list of dict)
-                df = pd.DataFrame(data)  # 리스트를 바로 DataFrame으로 변환
-                print(df.head())  # 확인용
-                if df.empty:
-                    print(f"📭 [EMPTY] userId: {userId}, graph: {graphName}")
-                    continue  # 아무것도 안하고 다음으로
+#             if response.status_code == 200:
+#                 # print(response.json())  # 응답 데이터
+#                 data = response.json()  # JSON -> Python 객체 (list of dict)
+#                 df = pd.DataFrame(data)  # 리스트를 바로 DataFrame으로 변환
+#                 print(df.head())  # 확인용
+#                 if df.empty:
+#                     print(f"📭 [EMPTY] userId: {userId}, graph: {graphName}")
+#                     continue  # 아무것도 안하고 다음으로
 
-                print(f"✅ [RECEIVED] userId: {userId}, graph: {graphName}, rows: {len(df)}")
+#                 print(f"✅ [RECEIVED] userId: {userId}, graph: {graphName}, rows: {len(df)}")
 
-                # 병합 처리
-                if invest_merged_df.empty:
-                    invest_merged_df = df
-                else:
-                    invest_merged_df = pd.merge(invest_merged_df, df, on=["userId", "startedAt"], how="inner")
+#                 # 병합 처리
+#                 if user_df.empty:
+#                     user_df = df
+#                 else:
+#                     user_df = pd.merge(user_df, df, on=["userId", "startedAt"], how="outer")
 
-            else:
-                print("에러 발생:", response.status_code)
-                print("에러 내용:", response.text)
+#             else:
+#                 print(f"❌ [ERROR] userId: {userId}, graph: {graphName}")
+#                 print("상태 코드:", response.status_code)
 
-# quest_url = f"http://43.203.175.69:8000/graph/{}/{}?userId={userId}"
-# shop_url = f"http://43.203.175.69:8001/api/{}/{}?userId={userId}"
+#                 # 응답이 JSON 형식이면 파싱
+#                 try:
+#                     error_data = response.json()
+#                     print("🔍 에러 응답(JSON):", error_data)
+#                 except ValueError:
+#                     # JSON 형식이 아니면 텍스트 그대로 출력
+#                     print("🔍 에러 응답(text):", response.text)
+    
+#     if not user_df.empty:
+#         invest_merged_df = pd.concat([invest_merged_df, user_df], ignore_index=True)
 
 # invest_merged_df = pd.read_csv("data/특정사람_invest_api_불러와서_병합.csv")
 
 # # 📌 사용 예시
+# invest_merged_df.to_csv("data/invest_merged_df.csv", index=False)
+invest_merged_df = pd.read_csv("data/invest_merged_df.csv")
 formatted_df = format_natural_language_summary(invest_merged_df)
 
 # # 📁 저장
@@ -184,25 +150,46 @@ qdrant = QdrantVectorStore(
 
 # qdrant.add_documents(documents)
 
-query = "고위험 자산 선호하는 아이들"
-results = qdrant.similarity_search(query, k=5)
+# 내 아이의 userId
+target_user_id = "d0a188a3-e24e-4772-95f7-07e59ce8885e"
 
-for i, doc in enumerate(results, start=1):
-    print(f"\n📌 [TOP {i}]")
-    print("🔍 userId:", doc.metadata.get("userId", "없음"))
-    print("🧾 내용:", doc.page_content.strip()[:300]) 
-
-# json = load_mongo(collection_name="graph1_all_history")
-
-# documents = json_to_documents(json)
-
-# # 벡터 DB에 저장
-# vector_db = Chroma.from_documents(
-#   documents, 
-#   embeddings=embeddings, 
-#   persist_directory="./chroma_db"
+# Qdrant에서 해당 userId로 point 조회
+user_data = find_child_info(target_user_id, client)
+# response = client.retrieve(
+#     collection_name="my_user_summaries",
+#     ids=[target_user_id] # ID 기반 조회
 # )
 
-# # 이후 RAG에 활용
-# retriever = vector_db.as_retriever()
-# retriever.get_relevant_documents("최근 투자 트렌드는?")
+template = """
+너는 아이들의 게임 데이터를 분석하여 학습 행동을 파악하고, 각 영역별로 피드백과 가이드를 제시하는 AI 학습 분석가야.
+
+- 너는 항상 "투자", "상점", "퀘스트"의 세 가지 활동 영역으로 데이터를 분류해서 분석해.
+- 각 영역별로 아래 내용을 파악해줘:
+    1. 아이가 어떤 활동을 주로 했는지 (활동량/빈도)
+    2. 선택한 행동의 특성 (예: 고위험 선호, 자주 소비, 미션 성공률 등)
+    3. 비교 지표 (전체 평균과의 비교)
+    4. 개선이 필요한 점과 칭찬할 점
+- 마지막에는 전체적인 행동 경향 요약과, 아이에게 맞는 학습/투자 습관 가이드를 간결히 제시해줘.
+- 분석은 친근하고 명확한 문장으로 작성하고, 어린이 보호자도 이해할 수 있도록 설명해.
+
+[아동 활동 데이터]
+{user_data}
+"""
+
+prompt = PromptTemplate.from_template(template)
+
+# 모델 정의
+llm = ChatOpenAI(
+    model_name="gpt-4o-mini",
+    streaming=True,
+    temperature=0.8,
+    callbacks=[StreamingStdOutCallbackHandler()]
+)
+
+chain = LLMChain(prompt=prompt, llm=llm)
+
+response = chain.run({
+    "user_data": user_data
+})
+
+print(response)
