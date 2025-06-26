@@ -160,34 +160,44 @@ target_user_id = "237aac1b-4d6f-4ca9-9e4f-30719ea5967d"
 #     ids=[target_user_id] # ID 기반 조회
 # )
 
-user_df = invest_merged_df[invest_merged_df["userId"] == target_user_id]
-print(user_df)
+invest_df = invest_merged_df[invest_merged_df["userId"] == target_user_id]
+print(invest_df)
 
 template = """
 너는 아이들의 게임 데이터를 분석하여 학습 행동을 파악하고, 각 영역별로 피드백과 가이드를 제시하는 AI 학습 분석가야.
 
-너는 항상 "투자", "상점", "퀘스트"의 세 가지 활동 영역으로 데이터를 분류해서 분석해.
-각 영역별로 아래 항목을 바탕으로 하나의 요약 텍스트를 만들어줘:
+너는 항상 다음의 세 가지 활동 영역을 기준으로 분석해:
+- 투자(invest)
+- 상점(shop)
+- 퀘스트(quest)
 
-- 활동량 또는 빈도
-- 행동의 특성
-- 전체 평균과의 비교
-- 개선할 점
-- 칭찬할 점
+각 영역별로 제공된 데이터만을 기반으로 다음을 포함하는 **요약 텍스트**를 각각 만들어줘:
+1. 활동량 또는 빈도
+2. 행동의 특성 (예: 고위험 선호, 자주 소비 등)
+3. 전체 평균과의 비교
+4. 개선할 점
+5. 칭찬할 점
 
-### 출력 예시
-분석 결과는 아래와 같이 **JSON 형식으로만 출력**해줘:
+마지막으로, 모든 영역을 종합한 분석 요약과 아이에게 적합한 학습/투자 습관 가이드를 생성해줘.
+
+🔹 출력 형식은 반드시 다음의 JSON 구조로 해줘:
 ```json
 {{
   "userId": "{user_id}",
-  "invest": "투자 영역 요약 텍스트",
-  "shop": "상점 영역 요약 텍스트",
-  "quest": "퀘스트 영역 요약 텍스트",
-  "all": "전체 행동 경향 및 학습 가이드 요약 텍스트"
+  "invest": "투자 영역 분석 결과 요약",
+  "shop": "상점 영역 분석 결과 요약",
+  "quest": "퀘스트 영역 분석 결과 요약",
+  "all": "전체 행동 경향 및 학습 가이드 요약"
 }}
 
-[아동 활동 데이터]
-{user_data}
+[투자 활동 데이터]
+{invest_data}
+
+[상점 활동 데이터]
+{shop_data}
+
+[퀘스트 활동 데이터]
+{quest_data}
 """
 
 prompt = PromptTemplate.from_template(template)
@@ -203,8 +213,10 @@ llm = ChatOpenAI(
 chain = LLMChain(prompt=prompt, llm=llm)
 
 response = chain.run({
-    "user_data": user_df,
-    "user_id": target_user_id
+    "user_id": target_user_id,
+    "invest_data": invest_df,
+    "shop_data": shop_df,
+    "quest_data": quest_df
 })
 
 print(response)
