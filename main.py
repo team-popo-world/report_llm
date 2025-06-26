@@ -151,26 +151,40 @@ qdrant = QdrantVectorStore(
 # qdrant.add_documents(documents)
 
 # 내 아이의 userId
-target_user_id = "d0a188a3-e24e-4772-95f7-07e59ce8885e"
+target_user_id = "237aac1b-4d6f-4ca9-9e4f-30719ea5967d"
 
 # Qdrant에서 해당 userId로 point 조회
-user_data = find_child_info(target_user_id, client)
+# user_data = find_child_info(target_user_id, client)
 # response = client.retrieve(
 #     collection_name="my_user_summaries",
 #     ids=[target_user_id] # ID 기반 조회
 # )
 
+user_df = invest_merged_df[invest_merged_df["userId"] == target_user_id]
+print(user_df)
+
 template = """
 너는 아이들의 게임 데이터를 분석하여 학습 행동을 파악하고, 각 영역별로 피드백과 가이드를 제시하는 AI 학습 분석가야.
 
-- 너는 항상 "투자", "상점", "퀘스트"의 세 가지 활동 영역으로 데이터를 분류해서 분석해.
-- 각 영역별로 아래 내용을 파악해줘:
-    1. 아이가 어떤 활동을 주로 했는지 (활동량/빈도)
-    2. 선택한 행동의 특성 (예: 고위험 선호, 자주 소비, 미션 성공률 등)
-    3. 비교 지표 (전체 평균과의 비교)
-    4. 개선이 필요한 점과 칭찬할 점
-- 마지막에는 전체적인 행동 경향 요약과, 아이에게 맞는 학습/투자 습관 가이드를 간결히 제시해줘.
-- 분석은 친근하고 명확한 문장으로 작성하고, 어린이 보호자도 이해할 수 있도록 설명해.
+너는 항상 "투자", "상점", "퀘스트"의 세 가지 활동 영역으로 데이터를 분류해서 분석해.
+각 영역별로 아래 항목을 바탕으로 하나의 요약 텍스트를 만들어줘:
+
+- 활동량 또는 빈도
+- 행동의 특성
+- 전체 평균과의 비교
+- 개선할 점
+- 칭찬할 점
+
+### 출력 예시
+분석 결과는 아래와 같이 **JSON 형식으로만 출력**해줘:
+```json
+{{
+  "userId": "{user_id}",
+  "invest": "투자 영역 요약 텍스트",
+  "shop": "상점 영역 요약 텍스트",
+  "quest": "퀘스트 영역 요약 텍스트",
+  "all": "전체 행동 경향 및 학습 가이드 요약 텍스트"
+}}
 
 [아동 활동 데이터]
 {user_data}
@@ -189,7 +203,8 @@ llm = ChatOpenAI(
 chain = LLMChain(prompt=prompt, llm=llm)
 
 response = chain.run({
-    "user_data": user_data
+    "user_data": user_df,
+    "user_id": target_user_id
 })
 
 print(response)
