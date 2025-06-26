@@ -30,9 +30,17 @@ def update_data(userId, invest_merged_df):
                     user_df = df
                 else:
                     # 충돌 방지를 위한 공통 컬럼 제거
-                    common_cols = set(user_df.columns).intersection(df.columns)
-                    common_cols -= {"userId", "startedAt"}
-                    user_df = pd.merge(user_df, df, on=["userId", "startedAt"], how="outer")
+                    # common_cols = set(user_df.columns).intersection(df.columns)
+                    # common_cols -= {"userId", "startedAt"}
+                    # user_df = pd.merge(user_df, df, on=["userId", "startedAt"], how="outer")
+                    # 병합 키가 둘 다 있는 경우에만 병합 시도
+                    merge_keys = ["userId", "startedAt"]
+                    if all(key in user_df.columns and key in df.columns for key in merge_keys):
+                        user_df = pd.merge(user_df, df, on=merge_keys, how="outer")
+                    elif "userId" in user_df.columns and "userId" in df.columns:
+                        user_df = pd.merge(user_df, df, on="userId", how="outer")
+                    else:
+                        print(f"⚠️ 병합 불가: {graphName} 데이터에는 병합 키가 없습니다.")
 
             else:
                 print(f"❌ [ERROR] userId: {userId}, graph: {graphName}")
