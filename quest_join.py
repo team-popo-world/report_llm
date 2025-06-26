@@ -8,7 +8,6 @@ child_ids = ["8a2b94b0-8395-41ad-99b0-6e8c0ea7edaa", "d0a188a3-e24e-4772-95f7-07
 
 # 1. 각각의 데이터프레임 생성
 completion_rate_daily_df = process_completion_rate("daily", child_ids)
-completion_rate_parent_df = process_completion_rate("parent", child_ids)
 
 completion_time_daily_df = process_completion_time("daily", child_ids)
 completion_time_parent_df = process_completion_time("parent", child_ids)
@@ -21,7 +20,6 @@ approval_time_parent_df = process_approval_time("parent", child_ids)
 # 2. 데이터프레임 리스트로 모으기
 dfs = [
     completion_rate_daily_df,
-    completion_rate_parent_df,
     completion_reward_df,
     approval_time_daily_df,
     approval_time_parent_df,
