@@ -8,8 +8,11 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.chains import LLMChain
 from langchain_core.prompts import PromptTemplate
 from utils.load_db import load_userId
-from utils.call_api import update_data
+from utils.invest_join import update_invest_data
+from utils.quest_join import update_quest_data
+from utils.shop_join import update_shop_data
 from utils.find_my_child import find_child_info
+from utils.cluster_count import transform_cluster_counts
 from utils.json_to_natural_language import format_natural_language_summary
 import requests
 import pandas as pd
@@ -28,74 +31,40 @@ url = os.getenv("QDRANT_URL")
 client = QdrantClient(url=url, prefer_grpc=False)
 
 # SQL에서 전체 데이터 받아오기
-# user_list = load_userId()
+#user_list = load_userId()
 
-# print(len(user_list))
+user_list = ["237aac1b-4d6f-4ca9-9e4f-30719ea5967d", "d4af0657-f9db-40ff-babd-68681db7ddeb", "3ed8a159-adb0-4380-a648-e015cb82690a", "22b19e79-5822-46f9-8e3f-7e55e751f9dc", "d0a188a3-e24e-4772-95f7-07e59ce8885e", "4671ffa6-c77e-45f5-af8e-0f1d80804d86", "8a2b94b0-8395-41ad-99b0-6e8c0ea7edaa"]
 
 # user_list = ["237aac1b-4d6f-4ca9-9e4f-30719ea5967d", "956f51a8-d6a0-4a12-a22b-9da3cdffc879", "f0220d43-513a-4619-973d-4ed84a42bf6a", "d0a188a3-e24e-4772-95f7-07e59ce8885e"]
+# userId = "237aac1b-4d6f-4ca9-9e4f-30719ea5967d"
 
-# api로 그래프 별로 정보 가져오기
-graph_list = ["avg_stay_time", "buy_ratio", "sell_ratio", "buy_sell_ratio", "bet_ratio", "avg_cash_ratio"]
-userId = "237aac1b-4d6f-4ca9-9e4f-30719ea5967d"
-
-invest_merged_df = pd.DataFrame()  # 초기 병합용 데이터프레임
+# invest_merged_df = pd.DataFrame()  # 초기 병합용 데이터프레임
+# shop_merged_df = pd.DataFrame()
 
 # for userId in user_list:
-#     invest_merged_df = update_data(userId, invest_merged_df)
+#    invest_merged_df = update_invest_data(userId, invest_merged_df)
 
-# invest_merged_df = update_data(userId, invest_merged_df)
+# quest_merged_df = update_quest_data(user_list)
+# shop_merged_df = update_shop_data(user_list)
+
 # invest_merged_df.to_csv("data/invest_merged_df.csv", index=False)
+# quest_merged_df.to_csv("data/quest_merged_df.csv", index=False)
+#shop_merged_df.to_csv("data/shop_merged_df_test.csv", index=False)
 
-# invest 쪽 api 불러오기
-# for userId in user_list:
-#     user_df = pd.DataFrame()
-#     for graphName in graph_list:
-#             invest_url = f"http://43.203.175.69:8002/api/invest/{graphName}/week?userId={userId}"
-#             headers = {"Content-Type": "application/json"}
+invest_merged_df = pd.read_csv("data/invest_merged_df.csv")
+quest_merged_df = pd.read_csv("data/quest_merged_df.csv")
+shop_merged_df = pd.read_csv("data/shop_merged_df_test.csv")
 
-#             response = requests.get(invest_url, headers=headers)
-
-#             if response.status_code == 200:
-#                 # print(response.json())  # 응답 데이터
-#                 data = response.json()  # JSON -> Python 객체 (list of dict)
-#                 df = pd.DataFrame(data)  # 리스트를 바로 DataFrame으로 변환
-#                 print(df.head())  # 확인용
-#                 if df.empty:
-#                     print(f"📭 [EMPTY] userId: {userId}, graph: {graphName}")
-#                     continue  # 아무것도 안하고 다음으로
-
-#                 print(f"✅ [RECEIVED] userId: {userId}, graph: {graphName}, rows: {len(df)}")
-
-#                 # 병합 처리
-#                 if user_df.empty:
-#                     user_df = df
-#                 else:
-#                     user_df = pd.merge(user_df, df, on=["userId", "startedAt"], how="outer")
-
-#             else:
-#                 print(f"❌ [ERROR] userId: {userId}, graph: {graphName}")
-#                 print("상태 코드:", response.status_code)
-
-#                 # 응답이 JSON 형식이면 파싱
-#                 try:
-#                     error_data = response.json()
-#                     print("🔍 에러 응답(JSON):", error_data)
-#                 except ValueError:
-#                     # JSON 형식이 아니면 텍스트 그대로 출력
-#                     print("🔍 에러 응답(text):", response.text)
-    
-#     if not user_df.empty:
-#         invest_merged_df = pd.concat([invest_merged_df, user_df], ignore_index=True)
-
-# invest_merged_df = pd.read_csv("data/특정사람_invest_api_불러와서_병합.csv")
+cluster_df = transform_cluster_counts(invest_merged_df)
+print(cluster_df.info())
 
 # # 📌 사용 예시
-# invest_merged_df.to_csv("data/invest_merged_df.csv", index=False)
-invest_merged_df = pd.read_csv("data/invest_merged_df.csv")
-quest_df = pd.read_csv("data/Final_Quest_DataFrame.csv")
-shop_df = pd.read_csv("data/shop_data_sample.csv")
+#invest_merged_df.to_csv("data/invest_merged_df.csv", index=False)
+#invest_merged_df = pd.read_csv("data/invest_merged_df.csv")
+#quest_df = pd.read_csv("data/Final_Quest_DataFrame.csv")
+#shop_df = pd.read_csv("data/shop_data_sample.csv")
 
-# formatted_df = format_natural_language_summary(invest_merged_df)
+# invest_merged_df = format_natural_language_summary(invest_merged_df)
 
 # # 📁 저장
 # formatted_df.to_csv("data/natural_format_data.csv", index=False)
@@ -119,10 +88,10 @@ shop_df = pd.read_csv("data/shop_data_sample.csv")
 #     metadata={"userId": row["userId"]}
 # )
 
-embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+# embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
-# 벡터 차원 알아내기
-embedding_dim = len(embedding.embed_query("임베딩 테스트"))
+# # 벡터 차원 알아내기
+# embedding_dim = len(embedding.embed_query("임베딩 테스트"))
 
 # client.delete_collection(collection_name="my_user_summaries")
 
@@ -160,7 +129,7 @@ embedding_dim = len(embedding.embed_query("임베딩 테스트"))
 # qdrant.add_documents(documents)
 
 # 내 아이의 userId
-target_user_id = "237aac1b-4d6f-4ca9-9e4f-30719ea5967d"
+# target_user_id = "237aac1b-4d6f-4ca9-9e4f-30719ea5967d"
 
 # Qdrant에서 해당 userId로 point 조회
 # user_data = find_child_info(target_user_id, client)
@@ -168,9 +137,6 @@ target_user_id = "237aac1b-4d6f-4ca9-9e4f-30719ea5967d"
 #     collection_name="my_user_summaries",
 #     ids=[target_user_id] # ID 기반 조회
 # )
-
-invest_df = invest_merged_df[invest_merged_df["userId"] == target_user_id]
-print(invest_df)
 
 template = """
 너는 아이들의 게임 데이터를 분석하여 학습 행동을 파악하고, 각 영역별로 **구체적인 수치와 비교를 통해 피드백과 가이드를 제시하는 AI 학습 분석가**야.
@@ -218,30 +184,36 @@ template = """
 
 # [퀘스트 활동 데이터]
 # {quest_data}
-
+"""
 prompt = PromptTemplate.from_template(template)
+
+openai_key = os.getenv("OPENAI_KEY")
 
 # 모델 정의
 llm = ChatOpenAI(
     model_name="gpt-4o-mini",
     streaming=True,
     temperature=0.8,
+    openai_api_key=openai_key,
     callbacks=[StreamingStdOutCallbackHandler()]
 )
 
 chain = LLMChain(prompt=prompt, llm=llm)
+"""
 
-response = chain.run({
-    "user_id": target_user_id,
-    "invest_data": invest_df,
-    "shop_data": shop_df,
-    "quest_data": quest_df
-})
 
-print("🧾 모델 응답 원문:", repr(response))
 
-# 1. Markdown 포맷 제거 (예: ```json\n ... \n```)
-cleaned = re.sub(r"^```(?:json)?\n|\n```$", "", response.strip())
+# response = chain.run({
+#     "user_id": target_user_id,
+#     "invest_data": invest_df,
+#     "shop_data": shop_df,
+#     "quest_data": quest_df
+# })
+
+# print("🧾 모델 응답 원문:", repr(response))
+
+# # 1. Markdown 포맷 제거 (예: ```json\n ... \n```)
+# cleaned = re.sub(r"^```(?:json)?\n|\n```$", "", response.strip())
 
 # MongoDB 연결
 uri = os.getenv("MONGO_URI")
@@ -249,30 +221,90 @@ db_name = os.getenv("MONGO_DB_NAME")
 
 client = MongoClient(uri)  # 또는 Atlas URI
 db = client[db_name]
-collection = db["user_analysis"]
+user_collection = db["user_analysis"]
+graph_collection = db["user_graph"]
 
-# JSON 문자열을 dict로 파싱
+
 # try:
-#     response_json = json.loads(response)
-#     # response_json = response
+#     response_json = json.loads(cleaned)
 # except json.JSONDecodeError as e:
 #     print("❗ JSON 디코딩 실패:", e)
 #     response_json = {}
 
-try:
-    response_json = json.loads(cleaned)
-except json.JSONDecodeError as e:
-    print("❗ JSON 디코딩 실패:", e)
-    response_json = {}
+# # userId 중복 방지: 기존에 있으면 업데이트, 없으면 삽입
+# if response_json:
+#     user_id = response_json.get("userId")
+#     collection.update_one(
+#         {"userId": user_id},
+#         {"$set": response_json},
+#         upsert=True
+#     )
+#     print(f"✅ MongoDB에 저장 완료 (userId: {user_id})")
 
-# userId 중복 방지: 기존에 있으면 업데이트, 없으면 삽입
-if response_json:
-    user_id = response_json.get("userId")
-    collection.update_one(
-        {"userId": user_id},
-        {"$set": response_json},
-        upsert=True
-    )
-    print(f"✅ MongoDB에 저장 완료 (userId: {user_id})")
+###########################################################################
+# ✅ 전체 사용자에 대해 반복 실행
+"""
+for user_id in user_list:
+    try:
+        print(f"🚀 분석 중: {user_id}")
 
+        # 컬럼 존재 여부 먼저 확인
+        for df_name, df, col in [
+            ("invest_merged_df", invest_merged_df, "userId"),
+            ("cluster_df", cluster_df, "userId"),
+            ("quest_merged_df", quest_merged_df, "child_id"),
+            ("shop_merged_df", shop_merged_df, "userId")
+        ]:
+            if col not in df.columns:
+                print(f"❗ 오류: {df_name}에 '{col}' 컬럼이 없습니다. (userId={user_id})")
+                raise KeyError(f"{df_name} missing column {col}")
 
+        invest_df = invest_merged_df[invest_merged_df["userId"] == user_id]
+        cluster_user_df = cluster_df[cluster_df["userId"] == user_id]
+        quest_df = quest_merged_df[quest_merged_df["child_id"] == user_id]
+        shop_df = shop_merged_df[shop_merged_df["userId"] == user_id] 
+
+        # 체인 실행
+        response = chain.run({
+            "user_id": user_id,
+            "invest_data": invest_df,
+            "shop_data": shop_df,
+            "quest_data": quest_df
+        })
+
+        # 출력 클린업
+        cleaned = re.sub(r"^```(?:json)?\n|\n```$", "", response.strip())
+
+        # JSON 파싱
+        response_user_json = json.loads(cleaned)
+
+        cluster_df.drop(columns="userId", inplace=True)
+        quest_df.drop(columns="child_id", inplace=True)
+        # quest_df = quest_df[["userId", "", "", "", ""]]
+        shop_df = shop_df[["weeklyTrend"]]
+
+        graph_json = {
+            "invest_graph": cluster_df.to_dict(orient="records"),
+            "shop_graph": shop_df.to_dict(orient="records"),
+            "quest_graph": quest_df.to_dict(orient="records"),
+        }
+
+        # MongoDB에 저장
+        user_collection.update_one(
+            {"userId": user_id},
+            {"$set": response_user_json},
+            upsert=True
+        )
+
+        graph_collection.update_one(
+            {"userId": user_id},
+            {"$set": graph_json},
+            upsert=True
+        )
+
+        print(f"✅ 저장 완료: {user_id}")
+
+    except Exception as e:
+        print(f"❗ 오류 발생 (userId={user_id}): {e}")
+
+"""

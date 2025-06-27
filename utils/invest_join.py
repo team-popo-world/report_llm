@@ -6,7 +6,7 @@ import requests
 # userId = "956f51a8-d6a0-4a12-a22b-9da3cdffc879"
 graph_list = ["avg_stay_time", "buy_ratio", "sell_ratio", "buy_sell_ratio", "bet_ratio", "avg_cash_ratio"]
 
-def update_data(userId, invest_merged_df):
+def update_invest_data(userId, invest_merged_df):
     user_df = pd.DataFrame()
     for graphName in graph_list:
             invest_url = f"http://43.203.175.69:8002/api/invest/{graphName}/week?userId={userId}"
