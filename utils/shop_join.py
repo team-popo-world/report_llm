@@ -1,33 +1,6 @@
 import pandas as pd
 import requests
 
-# 🔧 단일 유저 데이터 파싱 함수
-# def parse_shop_data(userId, data):
-#     result = {}
-
-#     result["userId"] = userId
-#     result["lastUpdated"] = data.get("lastUpdated")
-
-#     # metrics 정보
-#     metrics = data.get("metrics", {})
-#     for key, value in metrics.items():
-#         result[key] = value
-
-#     # categoryData 중 가장 큰 값
-#     categories = data.get("categoryData", [])
-#     if categories:
-#         top = max(categories, key=lambda x: x["value"])
-#         result["mostPopularCategory"] = top["name"]
-#         result["mostPopularAmount"] = top["value"]
-
-#     # 알림 정보
-#     alerts = data.get("alerts", [])
-#     if alerts:
-#         result["alertTitle"] = alerts[0].get("title")
-#         result["alertMessage"] = alerts[0].get("message")
-
-#     return pd.DataFrame([result])
-
 # 🔁 여러 userId 반복 처리
 def update_shop_data(user_ids):
     all_rows = []

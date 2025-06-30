@@ -1,5 +1,4 @@
 from dotenv import load_dotenv
-from utils.load_db import load_userId
 import pandas as pd
 import requests
 
@@ -17,7 +16,14 @@ def update_invest_data(userId, invest_merged_df):
             if response.status_code == 200:
                 # print(response.json())  # 응답 데이터
                 data = response.json()  # JSON -> Python 객체 (list of dict)
-                df = pd.DataFrame(data)  # 리스트를 바로 DataFrame으로 변환
+                # 메시지 응답일 경우 스킵
+                if isinstance(data, dict) and "message" in data and data["message"] == "데이터가 없습니다.":
+                    print(f"🚫 [SKIPPED] userId: {userId}, graph: {graphName} (message only)")
+                    continue
+                if isinstance(data, dict) and all(not isinstance(v, (list, tuple, dict)) for v in data.values()):
+                    df = pd.DataFrame(data, index=[0])
+                else:
+                    df = pd.DataFrame(data)  # 리스트를 바로 DataFrame으로 변환
                 print(df.head())  # 확인용
                 if df.empty:
                     print(f"📭 [EMPTY] userId: {userId}, graph: {graphName}")
